@@ -1,0 +1,20 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Banco gerado em runtime (recriado + seeds ao subir a API)
+backend/db.sqlite
+
+# Node / Next
+node_modules/
+.next/
+*.tsbuildinfo
+
+# Env / OS
+.env
+.env.local
+.DS_Store
+Thumbs.db
+.n8n/

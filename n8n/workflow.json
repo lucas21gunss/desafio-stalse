@@ -1,0 +1,55 @@
+{
+  "name": "Mini Inbox - Ticket Events",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ticket-events",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "0b6f1c1e-3f7a-4a51-9d2e-1a1b2c3d4e01",
+      "name": "Webhook - Ticket Event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "5f2d8c34-7b1e-4f0a-9a64-0d7e3c1b2a99"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formata o evento recebido do backend e loga no console do n8n\nconst EVENT_LABELS = {\n  ticket_closed: 'Ticket FECHADO',\n  ticket_high_priority: 'Ticket com prioridade ALTA',\n};\n\nreturn $input.all().map(({ json }) => {\n  const { event, ticket, changes, sent_at } = json.body;\n  const message = `[Mini Inbox] ${EVENT_LABELS[event] ?? event}: #${ticket.id} \"${ticket.subject}\" (${ticket.customer_name})`;\n  console.log(message);\n\n  return {\n    json: {\n      message,\n      event,\n      ticket_id: ticket.id,\n      customer: ticket.customer_name,\n      status: ticket.status,\n      priority: ticket.priority,\n      changes,\n      sent_at,\n      processed_at: new Date().toISOString(),\n    },\n  };\n});"
+      },
+      "id": "0b6f1c1e-3f7a-4a51-9d2e-1a1b2c3d4e02",
+      "name": "Format & Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://httpbin.org/post",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "0b6f1c1e-3f7a-4a51-9d2e-1a1b2c3d4e03",
+      "name": "HTTP Request - httpbin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 0]
+    }
+  ],
+  "connections": {
+    "Webhook - Ticket Event": {
+      "main": [[{ "node": "Format & Log", "type": "main", "index": 0 }]]
+    },
+    "Format & Log": {
+      "main": [[{ "node": "HTTP Request - httpbin", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}
