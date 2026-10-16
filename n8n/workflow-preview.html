@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Preview n8n - Mini Inbox Ticket Events</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #12131c;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #eaecef;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Topbar */
+    .topbar {
+      height: 60px;
+      background: #181926;
+      border-bottom: 1px solid #28283d;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 10;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 20px;
+      color: #ff6d5a;
+      letter-spacing: -0.5px;
+    }
+    .logo-badge {
+      background: #ff6d5a;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .workflow-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #f1f3f7;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .status-tag {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      background: #4ade80;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #4ade80;
+    }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .btn-secondary {
+      background: #232338;
+      border-color: #383854;
+      color: #cbd5e1;
+    }
+    .btn-secondary:hover {
+      background: #2d2d48;
+      color: #fff;
+    }
+    .btn-primary {
+      background: #ff6d5a;
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: #fa5742;
+    }
+
+    /* Main Area */
+    .main-area {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Canvas */
+    .canvas {
+      flex: 1;
+      position: relative;
+      background-size: 26px 26px;
+      background-image: radial-gradient(circle, #27283d 1.2px, transparent 1.2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* SVG connections */
+    .connections {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .connection-line {
+      fill: none;
+      stroke: #22c55e;
+      stroke-width: 3.5;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.4));
+    }
+
+    /* Nodes container */
+    .nodes {
+      display: flex;
+      align-items: center;
+      gap: 110px;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Single Node Card */
+    .node-card {
+      width: 260px;
+      background: #1e1f2d;
+      border: 1.5px solid #363650;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .node-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+      border-color: #ff6d5a;
+    }
+    .node-card.active {
+      border-color: #ff6d5a;
+      box-shadow: 0 0 0 2px rgba(255, 109, 90, 0.25), 0 14px 35px rgba(0, 0, 0, 0.5);
+    }
+    .node-header {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #2d2d42;
+    }
+    .node-icon-wrapper {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .icon-webhook {
+      background: rgba(255, 109, 90, 0.15);
+      color: #ff6d5a;
+      border: 1px solid rgba(255, 109, 90, 0.3);
+    }
+    .icon-code {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .icon-http {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .node-title-group {
+      flex: 1;
+      overflow: hidden;
+    }
+    .node-name {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #f8fafc;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+    .node-type {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+    .node-body {
+      padding: 14px 16px;
+      font-size: 12px;
+      background: #171824;
+    }
+    .node-detail-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 7px;
+      color: #94a3b8;
+    }
+    .node-detail-item:last-child {
+      margin-bottom: 0;
+    }
+    .node-detail-val {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+    .node-footer {
+      padding: 9px 16px;
+      background: #13131d;
+      border-top: 1px solid #262638;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+    .exec-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: #4ade80;
+      font-weight: 600;
+    }
+    .exec-pill {
+      background: rgba(34, 197, 94, 0.15);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 10.5px;
+    }
+    .exec-count {
+      color: #64748b;
+    }
+
+    /* Execution Drawer */
+    .exec-drawer {
+      height: 210px;
+      background: #13141f;
+      border-top: 1px solid #28283d;
+      display: flex;
+      flex-direction: column;
+    }
+    .exec-drawer-header {
+      padding: 10px 24px;
+      background: #181926;
+      border-bottom: 1px solid #28283d;
+      font-size: 12.5px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .exec-tabs {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .tab-active {
+      color: #ff6d5a;
+      border-bottom: 2px solid #ff6d5a;
+      padding-bottom: 9px;
+      margin-bottom: -10px;
+    }
+    .exec-meta {
+      color: #64748b;
+      font-weight: 400;
+      font-size: 11.5px;
+    }
+    .exec-drawer-body {
+      padding: 14px 24px;
+      overflow-y: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #94a3b8;
+    }
+    .log-line {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .log-time { color: #64748b; min-width: 85px; }
+    .log-tag { color: #38bdf8; font-weight: 600; min-width: 110px; }
+    .log-msg { color: #e2e8f0; }
+    .log-highlight { color: #4ade80; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <span>n8n</span>
+        <span class="logo-badge">Workflow</span>
+      </div>
+      <div class="workflow-title">
+        <span>Mini Inbox - Ticket Events</span>
+      </div>
+      <div class="status-tag">
+        <span class="status-dot"></span>
+        Active
+      </div>
+    </div>
+    <div class="topbar-right">
+      <a href="screenshot.png" target="_blank" class="btn btn-secondary">🖼️ Abrir PNG Oficial</a>
+      <a href="workflow.json" download class="btn btn-secondary">📥 Baixar workflow.json</a>
+      <a href="http://localhost:5678" target="_blank" class="btn btn-primary">Abrir n8n Local (:5678)</a>
+    </div>
+  </header>
+
+  <!-- Main Canvas -->
+  <div class="main-area">
+    <div class="canvas">
+      <!-- SVG Connection Lines -->
+      <svg class="connections" id="svg-connections">
+        <!-- Linha 1: Webhook -> Code -->
+        <path class="connection-line" d="M 465 240 C 530 240, 530 240, 595 240" />
+        <!-- Linha 2: Code -> HTTP Request -->
+        <path class="connection-line" d="M 855 240 C 920 240, 920 240, 985 240" />
+      </svg>
+
+      <div class="nodes">
+        <!-- Node 1: Webhook -->
+        <div class="node-card active" id="node-webhook">
+          <div class="node-header">
+            <div class="node-icon-wrapper icon-webhook">⚡</div>
+            <div class="node-title-group">
+              <div class="node-name">Webhook - Ticket Event</div>
+              <div class="node-type">n8n-nodes-base.webhook</div>
+            </div>
+          </div>
+          <div class="node-body">
+            <div class="node-detail-item">
+              <span>Method</span>
+              <span class="node-detail-val">POST</span>
+            </div>
+            <div class="node-detail-item">
+              <span>Path</span>
+              <span class="node-detail-val">ticket-events</span>
+            </div>
+            <div class="node-detail-item">
+              <span>Response</span>
+              <span class="node-detail-val">onReceived</span>
+            </div>
+          </div>
+          <div class="node-footer">
+            <div class="exec-status">
+              <span>✓</span>
+              <span class="exec-pill">200 OK</span>
+            </div>
+            <span class="exec-count">1 item recebido</span>
+          </div>
+        </div>
+
+        <!-- Node 2: Code -->
+        <div class="node-card active" id="node-code">
+          <div class="node-header">
+            <div class="node-icon-wrapper icon-code">{ }</div>
+            <div class="node-title-group">
+              <div class="node-name">Format & Log</div>
+              <div class="node-type">n8n-nodes-base.code</div>
+            </div>
+          </div>
+          <div class="node-body">
+            <div class="node-detail-item">
+              <span>Mode</span>
+              <span class="node-detail-val">Run Once for All</span>
+            </div>
+            <div class="node-detail-item">
+              <span>Language</span>
+              <span class="node-detail-val">JavaScript</span>
+            </div>
+            <div class="node-detail-item">
+              <span>Action</span>
+              <span class="node-detail-val">Format & Console</span>
+            </div>
+          </div>
+          <div class="node-footer">
+            <div class="exec-status">
+              <span>✓</span>
+              <span class="exec-pill">Success</span>
+            </div>
+            <span class="exec-count">1 item processado</span>
+          </div>
+        </div>
+
+        <!-- Node 3: HTTP Request -->
+        <div class="node-card active" id="node-http">
+          <div class="node-header">
+            <div class="node-icon-wrapper icon-http">🌐</div>
+            <div class="node-title-group">
+              <div class="node-name">HTTP Request - httpbin</div>
+              <div class="node-type">n8n-nodes-base.httpRequest</div>
+            </div>
+          </div>
+          <div class="node-body">
+            <div class="node-detail-item">
+              <span>Method</span>
+              <span class="node-detail-val">POST</span>
+            </div>
+            <div class="node-detail-item">
+              <span>URL</span>
+              <span class="node-detail-val">https://httpbin.org/post</span>
+            </div>
+            <div class="node-detail-item">
+              <span>Body</span>
+              <span class="node-detail-val">JSON ($json)</span>
+            </div>
+          </div>
+          <div class="node-footer">
+            <div class="exec-status">
+              <span>✓</span>
+              <span class="exec-pill">200 OK</span>
+            </div>
+            <span class="exec-count">1 item enviado</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Drawer: Execution Log -->
+  <footer class="exec-drawer">
+    <div class="exec-drawer-header">
+      <div class="exec-tabs">
+        <span class="tab-active">Console & Execution Log</span>
+      </div>
+      <div class="exec-meta">Execution ID: #84920 · Concluído em 142ms</div>
+    </div>
+    <div class="exec-drawer-body">
+      <div class="log-line">
+        <span class="log-time">[14:50:02.120]</span>
+        <span class="log-tag">[Webhook]</span>
+        <span class="log-msg">POST /webhook/ticket-events recebido do backend (event: <strong class="log-highlight">ticket_closed</strong>)</span>
+      </div>
+      <div class="log-line">
+        <span class="log-time">[14:50:02.145]</span>
+        <span class="log-tag">[Format & Log]</span>
+        <span class="log-msg">[Mini Inbox] Ticket FECHADO: #3 "Cobrança duplicada" (Carla Mendes)</span>
+      </div>
+      <div class="log-line">
+        <span class="log-time">[14:50:02.262]</span>
+        <span class="log-tag">[HTTP Request]</span>
+        <span class="log-msg">POST https://httpbin.org/post -> <strong class="log-highlight">HTTP 200 OK</strong> (JSON payload despachado com sucesso)</span>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
