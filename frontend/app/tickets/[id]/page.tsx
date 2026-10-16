@@ -129,8 +129,13 @@ export default function TicketDetailPage() {
 
           <p className="hint">
             ⚡ Mudar para <strong>Fechado</strong> ou prioridade <strong>Alta</strong> dispara o
-            webhook do n8n.
+            webhook do n8n e atualiza o Dashboard em tempo real.
           </p>
+          <div style={{ marginTop: "14px" }}>
+            <Link href="/dashboard" className="btn btn-secondary" style={{ width: "100%", justifyContent: "center", fontSize: "0.82rem", borderRadius: "8px" }}>
+              📊 Ver impacto no Dashboard →
+            </Link>
+          </div>
         </aside>
       </div>
 

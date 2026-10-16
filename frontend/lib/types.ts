@@ -15,9 +15,38 @@ export interface Ticket {
 export interface CountItem {
   name: string;
   count: number;
+  label?: string;
+}
+
+export interface WebhookEvent {
+  id: number;
+  event: string;
+  ticket_id: number;
+  customer_name: string;
+  subject: string;
+  status_code: number | null;
+  sent_at: string;
+}
+
+export interface InboxMetrics {
+  total_tickets: number;
+  open_tickets: number;
+  pending_tickets: number;
+  closed_tickets: number;
+  closure_rate: number;
+  by_priority: { name: string; label: string; count: number }[];
+  by_channel: CountItem[];
+}
+
+export interface AutomationMetrics {
+  webhook_url: string;
+  total_events: number;
+  recent_events: WebhookEvent[];
 }
 
 export interface Metrics {
+  inbox?: InboxMetrics;
+  automation?: AutomationMetrics;
   generated_at: string;
   source: { name: string; url: string; rows: number };
   summary: {

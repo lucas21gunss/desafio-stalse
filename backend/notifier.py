@@ -5,6 +5,7 @@ import os
 from datetime import datetime, timezone
 
 import httpx
+import database
 
 logger = logging.getLogger("notifier")
 
@@ -37,9 +38,16 @@ def build_payload(event: str, before: dict, after: dict) -> dict:
 def notify_n8n(before: dict, after: dict) -> None:
     for event in detect_events(before, after):
         payload = build_payload(event, before, after)
+        status_code = None
         try:
             response = httpx.post(N8N_WEBHOOK_URL, json=payload, timeout=5)
-            logger.info("Webhook %s enviado -> HTTP %s", event, response.status_code)
+            status_code = response.status_code
+            logger.info("Webhook %s enviado -> HTTP %s", event, status_code)
         except httpx.HTTPError as exc:
-            # O n8n fora do ar não deve quebrar a API.
+            # O n8n fora do ar não quebra a API, mas registramos para o dashboard.
             logger.warning("Falha ao enviar webhook %s: %s", event, exc)
+        finally:
+            try:
+                database.log_webhook_event(event, after, status_code, payload)
+            except Exception as e:
+                logger.error("Erro ao registrar evento de webhook: %s", e)

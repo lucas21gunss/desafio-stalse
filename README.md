@@ -149,7 +149,8 @@ O backend só dispara quando há **transição** para `status=closed` ou `priori
 
 ## Decisões
 
-- **`sqlite3` da stdlib, sem ORM** — uma tabela só, SQL direto é mais simples de ler.
-- **Busca no frontend** — a lista tem 20 itens, então a filtragem é instantânea no client; o backend também aceita `?q=` para quem consumir a API direto.
-- **`/metrics` só lê arquivo** — o ETL roda separado, como pedido; a API não depende de pandas.
-- **Webhook só em transição** — evita notificações duplicadas quando o ticket já estava fechado/alto.
+- **Integração Total (Tickets ↔ Dashboard ↔ n8n)** — o Dashboard unifica a operação ao vivo da caixa de entrada (total de tickets, abertos, pendentes, fechados e taxa de resolução calculados diretamente do SQLite), o feed em tempo real de webhooks disparados para o n8n e os dados analíticos históricos calculados pelo ETL em pandas a partir do Kaggle. Qualquer alteração em um ticket reflete imediatamente no Dashboard.
+- **Auditoria de Automações** — os disparos de webhook para o n8n são registrados no banco de dados e exibidos em um feed dedicado no Dashboard, permitindo acompanhar em tempo real as transições para status `closed` e prioridade `high`.
+- **`sqlite3` da stdlib, sem ORM** — tabelas leves com SQL direto, simples de manter e extremamente veloz.
+- **Busca reativa no frontend** — filtragem instantânea no client com suporte a busca textual por cliente, assunto e canal, além de filtro por chips de status.
+- **Webhook só em transição** — evita notificações duplicadas quando o ticket já estava fechado ou com prioridade alta.
